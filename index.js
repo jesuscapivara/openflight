@@ -1,126 +1,77 @@
 import express from "express";
 import axios from "axios";
-import qs from "qs";
 import dotenv from "dotenv";
 import { create } from "xmlbuilder2";
 
 dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT || 8080;
-const HOST = process.env.HOST || "0.0.0.0";
 
-// Limites do Brasil (ajuste se quiser)
+// Limites aproximados do Brasil
 const BOUNDS = {
-  lamin: -35,
-  lamax: 5,
-  lomin: -75,
-  lomax: -33,
+  latMin: -35,
+  latMax: 5,
+  lonMin: -75,
+  lonMax: -33,
 };
 
-// Solicita token OAuth2 para a OpenSky API
-const getAccessToken = async () => {
-  const response = await axios.post(
-    "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token",
-    qs.stringify({
-      grant_type: "client_credentials",
-      client_id: process.env.OPENSKY_CLIENT_ID,
-      client_secret: process.env.OPENSKY_CLIENT_SECRET,
-    }),
-    {
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    }
-  );
+const FLIGHTRADAR_URL = `https://data-live.flightradar24.com/zones/fcgi/feed.js?bounds=${BOUNDS.latMin},${BOUNDS.latMax},${BOUNDS.lonMin},${BOUNDS.lonMax}&faa=1&satellite=1&mlat=1&flarm=1&adsb=1&gnd=1&air=1&vehicles=0&estimated=1&maxage=14400`;
 
-  return response.data.access_token;
-};
-
-// Rota KML com ícones e estilos para Google Earth (atualiza em tempo real)
-app.get("/flights.kml", async (req, res) => {
+app.get("/flightradar.kml", async (req, res) => {
   try {
-    const token = await getAccessToken();
-
-    const response = await axios.get(
-      `https://opensky-network.org/api/states/all?lamin=${BOUNDS.lamin}&lomin=${BOUNDS.lomin}&lamax=${BOUNDS.lamax}&lomax=${BOUNDS.lomax}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-
-    const data = response.data;
+    const { data } = await axios.get(FLIGHTRADAR_URL, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        Referer: "https://www.flightradar24.com/",
+      },
+    });
 
     const doc = create({ version: "1.0", encoding: "UTF-8" })
       .ele("kml", { xmlns: "http://www.opengis.net/kml/2.2" })
       .ele("Document")
       .ele("name")
-      .txt("Voos sobre o Brasil")
-      .up()
-
-      // Estilo visual dos aviões
-      .ele("Style", { id: "planeStyle" })
-      .ele("IconStyle")
-      .ele("scale")
-      .txt("1.2")
-      .up()
-      .ele("Icon")
-      .ele("href")
-      .txt("http://maps.google.com/mapfiles/kml/shapes/airports.png")
-      .up()
-      .up()
-      .up()
-      .up()
-
-      .ele("Folder")
-      .ele("name")
-      .txt("Aeronaves em Tempo Real")
+      .txt("FlightRadar24 - Tráfego Aéreo no Brasil")
       .up();
 
-    data.states?.forEach((state) => {
-      const [
-        icao24,
-        callsign,
-        origin_country,
-        time_position,
-        last_contact,
-        longitude,
-        latitude,
-        baro_altitude,
-        on_ground,
-        velocity,
-        true_track,
-        vertical_rate,
-        sensors,
-        geo_altitude,
-        squawk,
-        spi,
-        position_source,
-        category,
-      ] = state;
+    for (const [key, value] of Object.entries(data)) {
+      if (!Array.isArray(value) || value.length < 5) continue;
 
-      if (!latitude || !longitude) return; // Pula entradas sem posição
+      const [
+        lat,
+        lon,
+        alt,
+        speed,
+        callsign,
+        aircraftType,
+        ,
+        ,
+        ,
+        ,
+        ,
+        ,
+        heading,
+      ] = value;
 
       doc
         .ele("Placemark")
         .ele("name")
-        .txt((callsign || icao24).trim())
+        .txt(callsign || key)
         .up()
         .ele("description")
         .txt(
-          `País de origem: ${origin_country || "N/A"}\n` +
-            `Altitude: ${baro_altitude?.toFixed(0) || "N/A"} m\n` +
-            `Velocidade: ${velocity?.toFixed(1) || "N/A"} m/s\n` +
-            `Rastreamento: ${true_track?.toFixed(1) || "N/A"}°\n` +
-            `Em solo: ${on_ground ? "Sim" : "Não"}\n` +
-            `Categoria: ${category || "N/A"}`
+          `Tipo: ${aircraftType || "Desconhecido"}\n` +
+            `Altitude: ${alt} ft\n` +
+            `Velocidade: ${speed} kt\n` +
+            `Proa: ${heading || "N/A"}°`
         )
         .up()
-        .ele("Style") // estilo inline com heading dinâmico
+        .ele("Style")
         .ele("IconStyle")
         .ele("heading")
-        .txt(true_track?.toFixed(0) || "0")
+        .txt(heading || 0)
         .up()
         .ele("scale")
-        .txt("1.2")
+        .txt("1.1")
         .up()
         .ele("Icon")
         .ele("href")
@@ -131,22 +82,23 @@ app.get("/flights.kml", async (req, res) => {
         .up()
         .ele("Point")
         .ele("coordinates")
-        .txt(`${longitude},${latitude},${baro_altitude || 0}`)
+        .txt(`${lon},${lat},${alt || 0}`)
         .up()
         .up()
         .up();
-    
-    });
+    }
 
     const kml = doc.end({ prettyPrint: true });
     res.setHeader("Content-Type", "application/vnd.google-earth.kml+xml");
     res.send(kml);
   } catch (err) {
     console.error("❌ Erro ao gerar KML:", err.message);
-    res.status(500).send("Erro ao gerar o KML");
+    res.status(500).send("Erro ao gerar KML");
   }
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`✅ Servidor rodando em http://${HOST}:${PORT}/flights.kml`);
+app.listen(PORT, () => {
+  console.log(
+    `🛰️ Servidor rodando em http://localhost:${PORT}/flightradar.kml`
+  );
 });
