@@ -129,7 +129,26 @@ app.get("/flights.kmz", async (req, res) => {
       .up();
 
     data.states?.forEach((state) => {
-      const [icao24, callsign, , , , lon, lat, baroAlt] = state;
+      const [
+        icao24,
+        callsign,
+        ,
+        ,
+        ,
+        lon,
+        lat,
+        baroAlt,
+        ,
+        velocity,
+        ,
+        ,
+        geoAlt,
+        squawk,
+        ,
+        ,
+        category,
+      ] = state;
+
       if (lat && lon) {
         doc
           .ele("Placemark")
