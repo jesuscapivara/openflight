@@ -114,8 +114,20 @@ app.get("/flights.kml", async (req, res) => {
             `Categoria: ${category || "N/A"}`
         )
         .up()
-        .ele("styleUrl")
-        .txt("#planeStyle")
+        .ele("Style") // estilo inline com heading dinâmico
+        .ele("IconStyle")
+        .ele("heading")
+        .txt(true_track?.toFixed(0) || "0")
+        .up()
+        .ele("scale")
+        .txt("1.2")
+        .up()
+        .ele("Icon")
+        .ele("href")
+        .txt("http://maps.google.com/mapfiles/kml/shapes/airports.png")
+        .up()
+        .up()
+        .up()
         .up()
         .ele("Point")
         .ele("coordinates")
@@ -123,6 +135,7 @@ app.get("/flights.kml", async (req, res) => {
         .up()
         .up()
         .up();
+    
     });
 
     const kml = doc.end({ prettyPrint: true });
