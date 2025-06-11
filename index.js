@@ -1,24 +1,16 @@
-// index.js
 import express from "express";
-import fetch from "node-fetch";
-import { create } from "xmlbuilder2";
+import axios from "axios";
+import qs from "qs";
 import dotenv from "dotenv";
-import fs from "fs";
-import archiver from "archiver"; 
+import { create } from "xmlbuilder2";
+import archiver from "archiver";
 
-dotenv.config(); // Carrega as variáveis do .env
+dotenv.config();
 
 const app = express();
-const OPENSKY_USER = process.env.OPENSKY_CLIENT_ID;
-const OPENSKY_PASS = process.env.OPENSKY_CLIENT_SECRET;
 const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || "0.0.0.0";
 
-
-const authHeader =
-  "Basic " + Buffer.from(`${OPENSKY_USER}:${OPENSKY_PASS}`).toString("base64");
-
-// Região monitorada (ajustável, ou configurable via .env se desejar)
 const BOUNDS = {
   lamin: -23,
   lamax: -22,
@@ -26,23 +18,31 @@ const BOUNDS = {
   lomax: -46,
 };
 
+const getAccessToken = async () => {
+  const url =
+    "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token";
+  const data = qs.stringify({
+    grant_type: "client_credentials",
+    client_id: process.env.OPENSKY_CLIENT_ID,
+    client_secret: process.env.OPENSKY_CLIENT_SECRET,
+  });
+
+  const headers = { "Content-Type": "application/x-www-form-urlencoded" };
+  const response = await axios.post(url, data, { headers });
+  return response.data.access_token;
+};
+
 app.get("/flights.kml", async (req, res) => {
   try {
-    const url =
-      `https://opensky-network.org/api/states/all` +
-      `?lamin=${BOUNDS.lamin}&lomin=${BOUNDS.lomin}` +
-      `&lamax=${BOUNDS.lamax}&lomax=${BOUNDS.lomax}`;
-
-    const response = await fetch(url, {
-      headers: { Authorization: authHeader },
+    const token = await getAccessToken();
+    const url = `https://opensky-network.org/api/states/all?lamin=${BOUNDS.lamin}&lomin=${BOUNDS.lomin}&lamax=${BOUNDS.lamax}&lomax=${BOUNDS.lomax}`;
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
 
-    if (!response.ok) {
-      throw new Error(`Erro ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
+    const data = response.data;
     const doc = create({ version: "1.0", encoding: "UTF-8" })
       .ele("kml", { xmlns: "http://www.opengis.net/kml/2.2" })
       .ele("Document")
@@ -56,7 +56,6 @@ app.get("/flights.kml", async (req, res) => {
 
     data.states?.forEach((state) => {
       const [icao24, callsign, , , , lon, lat, baroAlt] = state;
-
       if (lat && lon) {
         doc
           .ele("Placemark")
@@ -79,28 +78,22 @@ app.get("/flights.kml", async (req, res) => {
     res.setHeader("Content-Type", "application/vnd.google-earth.kml+xml");
     res.send(kml);
   } catch (err) {
-    console.error("Erro ao gerar KML:", err);
+    console.error("❌ Erro ao gerar KML:", err.message);
     res.status(500).send("Erro ao gerar o KML");
   }
 });
 
 app.get("/flights.kmz", async (req, res) => {
   try {
-    const url =
-      `https://opensky-network.org/api/states/all` +
-      `?lamin=${BOUNDS.lamin}&lomin=${BOUNDS.lomin}` +
-      `&lamax=${BOUNDS.lamax}&lomax=${BOUNDS.lomax}`;
-
-    const response = await fetch(url, {
-      headers: { Authorization: authHeader },
+    const token = await getAccessToken();
+    const url = `https://opensky-network.org/api/states/all?lamin=${BOUNDS.lamin}&lomin=${BOUNDS.lomin}&lamax=${BOUNDS.lamax}&lomax=${BOUNDS.lomax}`;
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
 
-    if (!response.ok) {
-      throw new Error(`Erro ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
+    const data = response.data;
     const doc = create({ version: "1.0", encoding: "UTF-8" })
       .ele("kml", { xmlns: "http://www.opengis.net/kml/2.2" })
       .ele("Document")
@@ -114,7 +107,6 @@ app.get("/flights.kmz", async (req, res) => {
 
     data.states?.forEach((state) => {
       const [icao24, callsign, , , , lon, lat, baroAlt] = state;
-
       if (lat && lon) {
         doc
           .ele("Placemark")
@@ -135,23 +127,19 @@ app.get("/flights.kmz", async (req, res) => {
 
     const kmlContent = doc.end({ prettyPrint: true });
 
-    // Cabeçalhos para KMZ
     res.setHeader("Content-Type", "application/vnd.google-earth.kmz");
     res.setHeader("Content-Disposition", 'attachment; filename="flights.kmz"');
 
-    // Compacta o KML dentro do KMZ (ZIP)
     const archive = archiver("zip", { zlib: { level: 9 } });
     archive.pipe(res);
     archive.append(kmlContent, { name: "doc.kml" });
     archive.finalize();
   } catch (err) {
-    console.error("Erro ao gerar KMZ:", err);
-    res.status(500).send("Erro ao gerar KMZ");
+    console.error("❌ Erro ao gerar KMZ:", err.message);
+    res.status(500).send("Erro ao gerar o KMZ");
   }
 });
 
 app.listen(PORT, HOST, () => {
-  console.log(`✅ Servidor rodando em http://${HOST}:${PORT}/flights.kml`);
+  console.log(`🚀 Servidor rodando em http://${HOST}:${PORT}`);
 });
-
-console.log("🔐 OpenSky ID:", OPENSKY_USER);
