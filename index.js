@@ -9,15 +9,16 @@ import archiver from "archiver";
 dotenv.config(); // Carrega as variáveis do .env
 
 const app = express();
-const PORT = process.env.PORT || 8080;
-const HOST = process.env.HOST || "0.0.0.0";
+const OPENSKY_USER = process.env.OPENSKY_CLIENT_ID;
+const OPENSKY_PASS = process.env.OPENSKY_CLIENT_SECRET;
+
 
 // Carrega credenciais do OpenSky do arquivo JSON
 const { clientId, clientSecret } = JSON.parse(
   fs.readFileSync("./credentials.json", "utf8")
 );
 const authHeader =
-  "Basic " + Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  "Basic " + Buffer.from(`${OPENSKY_USER}:${OPENSKY_PASS}`).toString("base64");
 
 // Região monitorada (ajustável, ou configurable via .env se desejar)
 const BOUNDS = {
@@ -154,3 +155,5 @@ app.get("/flights.kmz", async (req, res) => {
 app.listen(PORT, HOST, () => {
   console.log(`✅ Servidor rodando em http://${HOST}:${PORT}/flights.kml`);
 });
+
+console.log("🔐 OpenSky ID:", OPENSKY_USER);
