@@ -109,8 +109,6 @@ app.listen(PORT, () => {
   );
 });
 
-const data = response.data;
-
 console.log(
   "[✔] Dados recebidos da FR24:",
   JSON.stringify(data).substring(0, 500)
