@@ -11,6 +11,8 @@ dotenv.config(); // Carrega as variáveis do .env
 const app = express();
 const OPENSKY_USER = process.env.OPENSKY_CLIENT_ID;
 const OPENSKY_PASS = process.env.OPENSKY_CLIENT_SECRET;
+const PORT = process.env.PORT || 8080;
+const HOST = process.env.HOST || "0.0.0.0";
 
 
 const authHeader =
