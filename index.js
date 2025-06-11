@@ -97,6 +97,14 @@ app.get("/flightradar.kml", async (req, res) => {
     const kml = doc.end({ prettyPrint: true });
     res.setHeader("Content-Type", "application/vnd.google-earth.kml+xml");
     res.send(kml);
+
+
+    console.log(
+      "[✔] Dados recebidos da FR24:",
+      JSON.stringify(data).substring(0, 500)
+    );
+    
+
   } catch (err) {
     console.error("❌ Erro ao gerar KML:", err.message);
     res.status(500).send("Erro ao gerar KML");
@@ -108,8 +116,3 @@ app.listen(PORT, () => {
     `🛰️ Servidor rodando em http://localhost:${PORT}/flightradar.kml`
   );
 });
-
-console.log(
-  "[✔] Dados recebidos da FR24:",
-  JSON.stringify(data).substring(0, 500)
-);
