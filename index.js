@@ -12,10 +12,10 @@ const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || "0.0.0.0";
 
 const BOUNDS = {
-  lamin: -23,
-  lamax: -22,
-  lomin: -47,
-  lomax: -46,
+  lamin: -35, // latitude sul (extremo sul do RS)
+  lamax: 5, // latitude norte (Roraima)
+  lomin: -75, // longitude oeste (Acre)
+  lomax: -33, // longitude leste (litoral)
 };
 
 const getAccessToken = async () => {
@@ -47,8 +47,23 @@ app.get("/flights.kml", async (req, res) => {
       .ele("kml", { xmlns: "http://www.opengis.net/kml/2.2" })
       .ele("Document")
       .ele("name")
-      .txt("Rastreamento de Voos")
+      .txt("Voos sobre o Brasil")
       .up()
+
+      // Estilo para os aviões
+      .ele("Style", { id: "planeStyle" })
+      .ele("IconStyle")
+      .ele("scale")
+      .txt("1.2")
+      .up()
+      .ele("Icon")
+      .ele("href")
+      .txt("http://maps.google.com/mapfiles/kml/shapes/airports.png")
+      .up()
+      .up()
+      .up()
+      .up()
+
       .ele("Folder")
       .ele("name")
       .txt("Aeronaves em tempo real")
@@ -63,7 +78,15 @@ app.get("/flights.kml", async (req, res) => {
           .txt((callsign || icao24).trim())
           .up()
           .ele("description")
-          .txt(`ICAO24: ${icao24}\nAltitude: ${baroAlt?.toFixed(0) || "N/A"} m`)
+          .txt(
+            `ICAO24: ${icao24}\n` +
+              `Altitude: ${baroAlt?.toFixed(0) || "N/A"} m\n` +
+              `Velocidade: ${velocity?.toFixed(1) || "N/A"} m/s\n` +
+              `Origem: ${origin_country || "Indefinido"}`
+          )
+          .up()
+          .ele("styleUrl")
+          .txt("#planeStyle")
           .up()
           .ele("Point")
           .ele("coordinates")
