@@ -30,6 +30,7 @@ app.get("/flightradar.kml", async (req, res) => {
         "X-Requested-With": "XMLHttpRequest",
       },
     });    
+    
 
     const doc = create({ version: "1.0", encoding: "UTF-8" })
       .ele("kml", { xmlns: "http://www.opengis.net/kml/2.2" })
@@ -107,6 +108,8 @@ app.listen(PORT, () => {
     `🛰️ Servidor rodando em http://localhost:${PORT}/flightradar.kml`
   );
 });
+
+const data = response.data;
 
 console.log(
   "[✔] Dados recebidos da FR24:",
