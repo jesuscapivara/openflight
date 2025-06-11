@@ -1,0 +1,27 @@
+{
+  "name": "openflight",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000o\u0000p\u0000e\u0000n\u0000f\u0000l\u0000i\u0000g\u0000h\u0000t\u0000\r\u0000 \u0000",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jesuscapivara/openflight.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jesuscapivara/openflight/issues"
+  },
+  "homepage": "https://github.com/jesuscapivara/openflight#readme",
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "fs": "^0.0.1-security",
+    "node-fetch": "^3.3.2",
+    "xmlbuilder2": "^3.1.1"
+  }
+}
