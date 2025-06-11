@@ -21,14 +21,15 @@ app.get("/flightradar.kml", async (req, res) => {
   try {
     const { data } = await axios.get(FLIGHTRADAR_URL, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://www.flightradar24.com/',
-        'Accept': 'application/json, text/javascript, */*; q=0.01',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Origin': 'https://www.flightradar24.com',
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    });
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Referer: "https://www.flightradar24.com/",
+        Accept: "application/json, text/javascript, */*; q=0.01",
+        "Accept-Language": "en-US,en;q=0.9",
+        Origin: "https://www.flightradar24.com",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    });    
 
     const doc = create({ version: "1.0", encoding: "UTF-8" })
       .ele("kml", { xmlns: "http://www.opengis.net/kml/2.2" })
