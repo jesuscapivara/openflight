@@ -13,10 +13,6 @@ const OPENSKY_USER = process.env.OPENSKY_CLIENT_ID;
 const OPENSKY_PASS = process.env.OPENSKY_CLIENT_SECRET;
 
 
-// Carrega credenciais do OpenSky do arquivo JSON
-const { clientId, clientSecret } = JSON.parse(
-  fs.readFileSync("./credentials.json", "utf8")
-);
 const authHeader =
   "Basic " + Buffer.from(`${OPENSKY_USER}:${OPENSKY_PASS}`).toString("base64");
 
